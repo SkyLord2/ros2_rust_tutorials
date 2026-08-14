@@ -12,10 +12,19 @@ path = "src/node_sub.rs"
 name = "node_pub"
 path = "src/node_pub.rs"
 
+[[bin]]
+name = "webcam_pub"
+path = "src/webcam_pub.rs"
+[[bin]]
+name = "webcam_sub"
+path = "src/webcam_sub.rs"
+
 [dependencies]
 anyhow = {version = "1", features = ["backtrace"]}
 rclrs = "*"
 std_msgs = "*"
+sensor_msgs = "*"
+opencv = "0.100.1"
 
 # This specific version is compatible with Rust 1.75
 backtrace = "=0.3.74"
