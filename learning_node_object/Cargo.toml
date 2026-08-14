@@ -1,0 +1,21 @@
+[package]
+name = "learning_node_object"
+version = "0.0.1"
+authors = ["cds <chengdongsheng@outlook.com>"]
+edition = "2021"
+
+[[bin]]
+name = "learning_node_object"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = {version = "1", features = ["backtrace"]}
+rclrs = "*"
+
+# This specific version is compatible with Rust 1.75
+backtrace = "=0.3.74"
+opencv = "0.100.1"
+
+# uncomment the following section in order to fill in
+# further dependencies manually.
+# <dependency> = "*" 

@@ -1,0 +1,42 @@
+# Rust / Cargo
+/target/
+**/target/
+Cargo.lock
+
+# Colcon / ROS build outputs
+/build/
+/install/
+/log/
+**/build/
+**/install/
+**/log/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Python
+__pycache__/
+*.py[cod]
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# C/C++ generated artifacts
+*.o
+*.so
+*.a
+*.out
+
+# Local environment
+.env
+.env.*
