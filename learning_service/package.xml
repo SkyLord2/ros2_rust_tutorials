@@ -8,6 +8,7 @@
   <license>TODO: License declaration</license>
 
   <buildtool_depend>ament_cargo</buildtool_depend>
+  <depend>sensor_msgs</depend>
   <depend>learning_interface</depend>
 
   <export>

@@ -12,13 +12,22 @@ path = "src/adder_server.rs"
 name = "adder_client"
 path = "src/adder_client.rs"
 
+[[bin]]
+name = "object_server"
+path = "src/object_server.rs"
+
+[[bin]]
+name = "object_client"
+path = "src/object_client.rs"
+
 [dependencies]
 anyhow = {version = "1", features = ["backtrace"]}
 rclrs = "*"
 
 # This specific version is compatible with Rust 1.75
 backtrace = "=0.3.74"
-
+opencv = "0.100.1"
+sensor_msgs = "*"
 learning_interface = "*"
 
 # uncomment the following section in order to fill in
