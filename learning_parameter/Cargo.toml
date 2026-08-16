@@ -1,0 +1,20 @@
+[package]
+name = "learning_parameter"
+version = "0.0.1"
+authors = ["cds <chengdongsheng@outlook.com>"]
+edition = "2021"
+
+[[bin]]
+name = "learning_parameter"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = {version = "1", features = ["backtrace"]}
+rclrs = "*"
+
+# This specific version is compatible with Rust 1.75
+backtrace = "=0.3.74"
+
+# uncomment the following section in order to fill in
+# further dependencies manually.
+# <dependency> = "*" 
