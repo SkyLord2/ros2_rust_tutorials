@@ -8,12 +8,17 @@ edition = "2021"
 name = "learning_parameter"
 path = "src/main.rs"
 
+[[bin]]
+name = "object_param"
+path = "src/object_param.rs"
+
 [dependencies]
 anyhow = {version = "1", features = ["backtrace"]}
 rclrs = "*"
 
 # This specific version is compatible with Rust 1.75
 backtrace = "=0.3.74"
+opencv = "0.100.1"
 
 # uncomment the following section in order to fill in
 # further dependencies manually.
