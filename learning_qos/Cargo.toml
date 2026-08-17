@@ -1,0 +1,24 @@
+[package]
+name = "learning_qos"
+version = "0.0.1"
+authors = ["cds <chengdongsheng@outlook.com>"]
+edition = "2021"
+
+[[bin]]
+name = "pub_qos"
+path = "src/pub_qos.rs"
+
+[[bin]]
+name = "sub_qos"
+path = "src/sub_qos.rs"
+
+[dependencies]
+anyhow = {version = "1", features = ["backtrace"]}
+rclrs = "*"
+std_msgs = "*"
+# This specific version is compatible with Rust 1.75
+backtrace = "=0.3.74"
+
+# uncomment the following section in order to fill in
+# further dependencies manually.
+# <dependency> = "*" 
