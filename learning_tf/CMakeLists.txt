@@ -11,12 +11,19 @@ find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
+find_package(turtlesim REQUIRED)
 
 add_executable(static_tf_broadcaster src/static_tf_broadcaster.cpp)
 ament_target_dependencies(static_tf_broadcaster rclcpp geometry_msgs tf2 tf2_ros)
 
 add_executable(tf_listener src/tf_listener.cpp)
 ament_target_dependencies(tf_listener rclcpp geometry_msgs tf2 tf2_ros)
+
+add_executable(turtle_tf_broadcaster src/turtle_tf_broadcaster.cpp)
+ament_target_dependencies(turtle_tf_broadcaster rclcpp geometry_msgs tf2 tf2_ros turtlesim)
+
+add_executable(turtle_following src/turtle_following.cpp)
+ament_target_dependencies(turtle_following rclcpp geometry_msgs tf2 tf2_ros turtlesim)
 
 install(TARGETS
   static_tf_broadcaster
@@ -25,6 +32,11 @@ install(TARGETS
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
+
+# 【核心步骤】安装 launch 文件夹到 share 目录，使 ros2 launch 命令可以检索到该脚本
+install(DIRECTORY launch
+  DESTINATION share/${PROJECT_NAME}
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
