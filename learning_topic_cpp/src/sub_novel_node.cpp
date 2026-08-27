@@ -57,6 +57,7 @@ public:
                 if (!content.empty())
                 {
                     RCLCPP_INFO(this->get_logger(), "小说内容：%s", content.c_str());
+                    // todo 实现语音播放
                 }
                 
             }
