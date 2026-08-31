@@ -40,3 +40,5 @@ Thumbs.db
 # Local environment
 .env
 .env.*
+*.onnx
+*.onnx:Zone.Identifier
