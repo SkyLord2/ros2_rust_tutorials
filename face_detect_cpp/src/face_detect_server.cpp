@@ -9,7 +9,10 @@ private:
     rclcpp::Service<learning_interface::srv::FaceDetector>::SharedPtr service_;
     cv::Ptr<cv::FaceDetectorYN> detector_; // YuNet 人脸检测器实例
     std::string model_path_;
-    // const cv::Size INFERENCE_SIZE{640, 640};
+
+    // 推荐固定推理尺寸（兼顾微小人脸检测精度与超低推理延迟）
+    const cv::Size INFERENCE_SIZE{640, 640};
+
 private:
     void handle_face_detect(
         const std::shared_ptr<learning_interface::srv::FaceDetector::Request> request,
@@ -34,25 +37,15 @@ private:
             return;
         }
 
-        // 2. 动态调整 YuNet 输入图像分辨率
-        int aligned_w = std::max(32, (frame.cols / 32) * 32);
-        int aligned_h = std::max(32, (frame.rows / 32) * 32);
-
+        // 2. 将图像缩放到固定的推理尺寸，保证 DNN 网络的稳定性与速度
         cv::Mat input_frame;
-        // cv::resize(frame, input_frame, INFERENCE_SIZE);
-        if (aligned_w != frame.cols || aligned_h != frame.rows) {
-            cv::resize(frame, input_frame, cv::Size(aligned_w, aligned_h));
-        } else {
-            input_frame = frame;
-        }
-        // 动态同步检测器输入分辨率
-        detector_->setInputSize(cv::Size(aligned_w, aligned_h));
+        cv::resize(frame, input_frame, INFERENCE_SIZE);
 
         // 3. 记录检测耗时并执行推理
         cv::Mat faces;
         auto start_time = std::chrono::high_resolution_clock::now();
         
-        // 传入尺寸对齐后的 input_frame 进行检测
+        // 传入 640x640 图像进行检测
         detector_->detect(input_frame, faces);
         
         auto end_time = std::chrono::high_resolution_clock::now();
@@ -69,12 +62,16 @@ private:
         response->right.reserve(face_num);
         response->bottom.reserve(face_num);
 
+        // 计算原图与推理图像的缩放比例
+        float scale_x = static_cast<float>(frame.cols) / INFERENCE_SIZE.width;
+        float scale_y = static_cast<float>(frame.rows) / INFERENCE_SIZE.height;
+
         for (int i = 0; i < face_num; ++i) {
-            // YuNet 矩阵每行前 4 个元素对应 [x, y, w, h]
-            int32_t x = static_cast<int32_t>(faces.at<float>(i, 0));
-            int32_t y = static_cast<int32_t>(faces.at<float>(i, 1));
-            int32_t w = static_cast<int32_t>(faces.at<float>(i, 2));
-            int32_t h = static_cast<int32_t>(faces.at<float>(i, 3));
+            // 将推理结果坐标等比例映射回原图坐标
+            int32_t x = static_cast<int32_t>(faces.at<float>(i, 0) * scale_x);
+            int32_t y = static_cast<int32_t>(faces.at<float>(i, 1) * scale_y);
+            int32_t w = static_cast<int32_t>(faces.at<float>(i, 2) * scale_x);
+            int32_t h = static_cast<int32_t>(faces.at<float>(i, 3) * scale_y);
             float score = faces.at<float>(i, 14); // 提取置信度评分
 
             // 存入边界框坐标
@@ -90,20 +87,21 @@ private:
         RCLCPP_INFO(this->get_logger(), "检测完成: 共 %d 张人脸, 推理耗时: %.2f ms", 
                     response->number, response->cost_time);
     }
+
 public:
     FaceDetectServer(std::string name) : Node(name) {
-        // 声明与获取 ONNX 模型路径参数
+        // 声明与获取 ONNX 模型路径参数，默认使用 2022mar 模型
         this->declare_parameter<std::string>(
             "model_path", 
             "/home/cds/Code/ros2/dev_ws/src/ros2_rust_tutorials/face_detection_yunet_2022mar.onnx"
         );
         this->get_parameter("model_path", model_path_);
 
-        // 初始化 YuNet 检测器 (模型路径, 配置字符串, 输入尺寸, 评分阈值, NMS阈值, TopK)
+        // 初始化 YuNet 检测器 (固定输入尺寸为 640x640)
         detector_ = cv::FaceDetectorYN::create(
             model_path_,
             "",
-            cv::Size(320, 320), // 初始缺省尺寸，推理前会动态更新
+            INFERENCE_SIZE,     // 与推理尺寸保持一致
             0.8f,               // 置信度阈值 (score threshold)
             0.3f,               // 非极大值抑制阈值 (nms threshold)
             5000                // 最大保留人脸候选数
@@ -114,7 +112,7 @@ public:
             return;
         }
 
-        // 创建服务并绑定回调函数[cite: 10]
+        // 创建服务并绑定回调函数
         service_ = this->create_service<learning_interface::srv::FaceDetector>(
             "face_detect",
             std::bind(&FaceDetectServer::handle_face_detect, this, 
@@ -123,11 +121,9 @@ public:
 
         RCLCPP_INFO(this->get_logger(), "YuNet 人脸检测服务端已启动，模型加载路径: %s", model_path_.c_str());
     }
-    ~FaceDetectServer() {
 
-    }
+    ~FaceDetectServer() {}
 };
-
 
 int main(int argc, char* argv[]) {
     rclcpp::init(argc, argv);
