@@ -11,6 +11,15 @@
                     <color rgba="1.0 1.0 0.0 0.8"/>
                 </material>
             </visual>
+            <collision> 
+                <origin rpy="1.57079 0 0" xyz="0 0 0"/>
+                <geometry>
+                    <cylinder radius="0.032" length="0.04" />    
+                </geometry>
+                <material name="Yellow">
+                    <color rgba="1.0 1.0 0.0 0.8"/>
+                </material>
+            </collision>
         </link>
         <joint name="${name}_joint" type="continuous">
             <parent link="base_link"/>

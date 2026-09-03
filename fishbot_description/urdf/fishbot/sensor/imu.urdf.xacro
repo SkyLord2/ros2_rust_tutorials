@@ -11,6 +11,15 @@
                     <color rgba="1.0 1.0 1.0 0.5"/>
                 </material>
             </visual>
+            <collision> 
+                <origin rpy="0 0 0" xyz="0 0 0"/>
+                <geometry>
+                    <box size="0.02 0.02 0.02"/>    
+                </geometry>
+                <material name="White">
+                    <color rgba="1.0 1.0 1.0 0.5"/>
+                </material>
+            </collision>
         </link>
         <joint name="imu_joint" type="fixed">
             <parent link="base_link"/>
