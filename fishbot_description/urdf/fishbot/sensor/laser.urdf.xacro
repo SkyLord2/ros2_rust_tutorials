@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+    <xacro:include filename="$(find fishbot_description)/urdf/fishbot/common_inertia.xacro"/>
     <xacro:macro name="laser_xacro" params="xyz">
         <link name="laser_cylinder_link">
             <visual>
@@ -20,6 +21,7 @@
                     <color rgba="1.0 1.0 1.0 1.0"/>
                 </material>
             </collision>
+            <xacro:cylinder_inertia m="0.01" r="0.01" h="0.10" />
         </link>
         <link name="laser_link">
             <visual>
@@ -40,6 +42,7 @@
                     <color rgba="0.0 0.0 0.0 0.5"/>
                 </material>
             </collision>
+            <xacro:cylinder_inertia m="0.03" r="0.02" h="0.02" />
         </link>
         <joint name="laser_joint" type="fixed">
             <parent link="laser_cylinder_link"/>
