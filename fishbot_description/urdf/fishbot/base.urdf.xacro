@@ -1,16 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
     <xacro:macro name="base_xacro" params="length radius">
+        <link name="base_footprint">
+        </link>
         <link name="base_link">
             <visual>
                 <origin rpy="0 0 0" xyz="0 0 0"/>
                 <geometry>
                     <cylinder radius="${radius}" length="${length}"/>    
                 </geometry>
-                <material name="Black">
-                    <color rgba="0.0 0.0 0.0 1.0"/>
+                <material name="Gray">
+                    <color rgba="0.7 0.7 0.7 0.5"/>
                 </material>
             </visual>
         </link>
+        <joint name="joint_name" type="fixed">
+            <origin xyz="0.0 0.0 ${length/2.0 + 0.032 - 0.001}" rpy="0.0 0.0 0.0"/>
+            <parent link="base_footprint"/>
+            <child link="base_link"/>
+        </joint>
     </xacro:macro>
 </robot>
