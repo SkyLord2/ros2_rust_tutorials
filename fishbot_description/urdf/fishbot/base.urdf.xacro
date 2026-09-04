@@ -30,5 +30,10 @@
             <parent link="base_footprint"/>
             <child link="base_link"/>
         </joint>
+        <gazebo reference="base_link">
+            <material>
+                Gazebo/GreyTransparent
+            </material>
+        </gazebo>
     </xacro:macro>
 </robot>
