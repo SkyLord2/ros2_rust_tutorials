@@ -14,6 +14,8 @@ find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav2_msgs REQUIRED)
 find_package(rclcpp_action REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
 
 add_executable(nav2pose src/nav2pose.cpp)
 ament_target_dependencies(nav2pose rclcpp nav2_msgs rclcpp_action)
@@ -26,9 +28,13 @@ ament_target_dependencies(init_robot_pose
   nav2_msgs
 )
 
+add_executable(get_robot_pose src/get_robot_pose.cpp)
+ament_target_dependencies(get_robot_pose rclcpp geometry_msgs tf2 tf2_ros)
+
 install(TARGETS
   nav2pose
   init_robot_pose
+  get_robot_pose
   DESTINATION lib/${PROJECT_NAME}
 )
 
