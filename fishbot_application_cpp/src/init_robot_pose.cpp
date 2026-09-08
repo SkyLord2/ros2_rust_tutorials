@@ -1,5 +1,6 @@
 #include <chrono>
 #include <memory>
+#include <thread>
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
 #include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
@@ -11,7 +12,10 @@ class RobotPoseInitializer : public rclcpp::Node {
 public:
     using NavigateToPose = nav2_msgs::action::NavigateToPose;
 
-    RobotPoseInitializer() : Node("robot_pose_initializer") {
+    RobotPoseInitializer()
+        : Node(
+            "robot_pose_initializer",
+            rclcpp::NodeOptions().append_parameter_override("use_sim_time", true)) {
         // 创建初始位姿发布者，对应 Python 中 setInitialPose 的底层发布话题
         initial_pose_pub_ = this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
             "/initialpose", 10);
@@ -74,6 +78,26 @@ public:
         return true;
     }
 
+    bool waitForInitialPoseSubscriber(std::chrono::seconds timeout = 10s) {
+        RCLCPP_INFO(this->get_logger(), "等待 AMCL 订阅 /initialpose ...");
+
+        const auto start_time = std::chrono::steady_clock::now();
+        while (initial_pose_pub_->get_subscription_count() == 0) {
+            if (!rclcpp::ok()) {
+                RCLCPP_ERROR(this->get_logger(), "系统被中断");
+                return false;
+            }
+            if (std::chrono::steady_clock::now() - start_time > timeout) {
+                RCLCPP_ERROR(this->get_logger(), "等待 /initialpose 订阅者超时，不发布初始位姿");
+                return false;
+            }
+            std::this_thread::sleep_for(100ms);
+        }
+
+        RCLCPP_INFO(this->get_logger(), "/initialpose 订阅者已就绪");
+        return true;
+    }
+
 private:
     rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr initial_pose_pub_;
     rclcpp_action::Client<NavigateToPose>::SharedPtr nav_to_pose_client_;
@@ -85,8 +109,8 @@ int main(int argc, char** argv) {
     auto node = std::make_shared<RobotPoseInitializer>();
 
     // 1. 严格先等待 Nav2 核心服务激活就绪
-    if (node->waitUntilNav2Active()) {
-        // 2. 确认就绪后，再发布初始位姿 (0.0, 0.0)
+    if (node->waitUntilNav2Active() && node->waitForInitialPoseSubscriber()) {
+        // 2. 确认 AMCL 已订阅后，再发布初始位姿 (0.0, 0.0)
         node->setInitialPose(0.0, 0.0);
     }
     // 3. 持续运行节点
