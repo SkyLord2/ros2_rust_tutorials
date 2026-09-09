@@ -26,9 +26,10 @@ ament_target_dependencies(waypoint_follower rclcpp nav2_msgs geometry_msgs rclcp
 add_executable(init_robot_pose src/init_robot_pose.cpp)
 ament_target_dependencies(init_robot_pose
   rclcpp
-  rclcpp_action
   geometry_msgs
   nav2_msgs
+  tf2
+  tf2_ros
 )
 
 add_executable(get_robot_pose src/get_robot_pose.cpp)
