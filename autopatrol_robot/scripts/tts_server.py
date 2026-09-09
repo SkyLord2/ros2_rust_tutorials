@@ -44,15 +44,13 @@ class TtsServer(Node):
                 model=str(model_dir / 'model.onnx'),
                 lexicon=str(model_dir / 'lexicon.txt'),
                 tokens=str(model_dir / 'tokens.txt'),
-                data_dir=str(model_dir),
-                dict_dir=str(model_dir / 'dict'),
-                rule_fsts=rule_fsts)
+                data_dir=str(model_dir))
             model = sherpa_onnx.OfflineTtsModelConfig(
                 vits=vits,
                 num_threads=int(self.get_parameter('num_threads').value),
                 provider='cpu')
             config = sherpa_onnx.OfflineTtsConfig(
-                model=model, max_num_sentences=1)
+                model=model, rule_fsts=rule_fsts, max_num_sentences=1)
             self._tts = sherpa_onnx.OfflineTts(config)
         except Exception as exc:
             self._setup_error = f'sherpa_onnx 模型加载失败: {exc}'

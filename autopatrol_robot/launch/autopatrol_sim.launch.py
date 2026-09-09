@@ -14,6 +14,9 @@ def generate_launch_description():
     slam_share = get_package_share_directory('fishbot_slam')
     nav_share = get_package_share_directory('fishbot_navigation2')
     default_waypoints = os.path.join(patrol_share, 'config', 'waypoints.yaml')
+    default_map = os.path.join(nav_share, 'maps', 'room.yaml')
+    default_params_file = os.path.join(
+        nav_share, 'config', 'nav2_params.yaml')
     default_model = (
         '/home/cds/Code/ros2/dev_ws/src/ros2_rust_tutorials/'
         'autopatrol_robot/tts/vits-melo-tts-zh_en')
@@ -23,6 +26,8 @@ def generate_launch_description():
         DeclareLaunchArgument('use_sim_time', default_value='true'),
         DeclareLaunchArgument(
             'waypoints_file', default_value=default_waypoints),
+        DeclareLaunchArgument('map', default_value=default_map),
+        DeclareLaunchArgument('params_file', default_value=default_params_file),
         DeclareLaunchArgument(
             'image_save_dir',
             default_value=os.path.join(os.getcwd(), 'autopatrol_images')),
@@ -32,7 +37,10 @@ def generate_launch_description():
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(
                 nav_share, 'launch', 'navigation2.launch.py')),
-            launch_arguments={'use_sim_time': use_sim_time}.items()),
+            launch_arguments={
+                'use_sim_time': use_sim_time,
+                'map': LaunchConfiguration('map'),
+                'params_file': LaunchConfiguration('params_file')}.items()),
         TimerAction(period=8.0, actions=[launch_ros.actions.Node(
             package='fishbot_application_cpp',
             executable='init_robot_pose', output='screen')]),

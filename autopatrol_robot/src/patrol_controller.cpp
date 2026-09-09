@@ -6,12 +6,14 @@
 #include <iomanip>
 #include <memory>
 #include <mutex>
+#include <limits>
 #include <set>
 #include <sstream>
 #include <string>
 #include <vector>
 
 #include <opencv2/imgcodecs.hpp>
+#include <opencv2/core.hpp>
 #include <yaml-cpp/yaml.h>
 
 #include "autopatrol_robot/srv/speech_text.hpp"
@@ -21,6 +23,9 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
 #include "sensor_msgs/msg/image.hpp"
+#include "tf2/time.h"
+#include "tf2_ros/buffer.h"
+#include "tf2_ros/transform_listener.h"
 
 using namespace std::chrono_literals;
 
@@ -39,7 +44,7 @@ class PatrolController final : public rclcpp::Node {
   using SpeechText = autopatrol_robot::srv::SpeechText;
 
   PatrolController()
-  : Node("patrol_controller") {
+  : Node("patrol_controller"), tf_buffer_(get_clock()), tf_listener_(tf_buffer_) {
     waypoints_file_ = declare_parameter<std::string>("waypoints_file", "");
     image_topic_ = declare_parameter<std::string>("image_topic", "/camera_sensor/image_raw");
     image_save_dir_ = declare_parameter<std::string>("image_save_dir", "./autopatrol_images");
@@ -112,20 +117,45 @@ class PatrolController final : public rclcpp::Node {
   }
 
   void onImage(const sensor_msgs::msg::Image::ConstSharedPtr msg) {
+    constexpr std::size_t kMaxImageBytes = 100U * 1024U * 1024U;
+    if (!msg || msg->height == 0 || msg->width == 0 || msg->step == 0 ||
+        msg->height > 10000 || msg->width > 10000 ||
+        msg->step > kMaxImageBytes / msg->height ||
+        static_cast<std::size_t>(msg->step) * msg->height > msg->data.size() ||
+        msg->data.size() > kMaxImageBytes) {
+      RCLCPP_WARN_THROTTLE(
+        get_logger(), *get_clock(), 5000,
+        "收到非法或过大的图像消息，已忽略: %ux%u step=%u bytes=%zu",
+        msg ? msg->width : 0, msg ? msg->height : 0, msg ? msg->step : 0,
+        msg ? msg->data.size() : 0);
+      return;
+    }
     try {
       const auto cv_image = cv_bridge::toCvCopy(msg, "bgr8");
+      if (!cv_image || cv_image->image.empty()) return;
       std::lock_guard<std::mutex> lock(image_mutex_);
       latest_image_ = cv_image->image.clone();
       latest_image_time_ = std::chrono::steady_clock::now();
     } catch (const cv_bridge::Exception & ex) {
       RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 5000, "图像转换失败: %s", ex.what());
+    } catch (const cv::Exception & ex) {
+      RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 5000, "OpenCV 图像处理失败: %s", ex.what());
+    } catch (const std::exception & ex) {
+      RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 5000, "图像处理失败: %s", ex.what());
     }
   }
 
   void tick() {
     if (stopped_ || state_ == State::Stopped || waypoints_.empty()) return;
     if (state_ == State::WaitingNav) {
-      if (nav_client_->action_server_is_ready()) sendCurrentGoal();
+      if (!nav_client_->action_server_is_ready()) return;
+      if (!tf_buffer_.canTransform("map", "base_link", tf2::TimePointZero)) {
+        RCLCPP_WARN_THROTTLE(
+          get_logger(), *get_clock(), 5000,
+          "等待定位完成，暂不发送巡检目标: map -> base_link 变换不可用");
+        return;
+      }
+      sendCurrentGoal();
       return;
     }
     if (state_ == State::Navigating &&
@@ -249,8 +279,13 @@ class PatrolController final : public rclcpp::Node {
     localtime_r(&time, &tm);
     std::ostringstream filename;
     filename << image_save_dir_ << "/" << name << "_" << std::put_time(&tm, "%Y%m%d_%H%M%S") << ".jpg";
-    if (!cv::imwrite(filename.str(), image)) {
-      RCLCPP_ERROR(get_logger(), "保存图像失败: %s", filename.str().c_str());
+    try {
+      if (!cv::imwrite(filename.str(), image)) {
+        RCLCPP_ERROR(get_logger(), "保存图像失败: %s", filename.str().c_str());
+        return false;
+      }
+    } catch (const cv::Exception & ex) {
+      RCLCPP_ERROR(get_logger(), "OpenCV 保存图像失败: %s", ex.what());
       return false;
     }
     RCLCPP_INFO(get_logger(), "已保存巡检图像: %s", filename.str().c_str());
@@ -289,6 +324,8 @@ class PatrolController final : public rclcpp::Node {
   rclcpp_action::Client<NavigateToPose>::SharedPtr nav_client_;
   rclcpp::Client<SpeechText>::SharedPtr speech_client_;
   rclcpp::TimerBase::SharedPtr timer_;
+  tf2_ros::Buffer tf_buffer_;
+  tf2_ros::TransformListener tf_listener_;
 };
 
 int main(int argc, char ** argv) {
