@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
+import os
 import pathlib
 import shlex
+import shutil
 import subprocess
 import threading
 import wave
@@ -19,13 +21,39 @@ class TtsServer(Node):
         self.declare_parameter('speaker_id', 0)
         self.declare_parameter('speed', 1.0)
         self.declare_parameter('audio_dir', '/tmp/autopatrol_tts')
-        self.declare_parameter('audio_player', 'aplay -q')
+        self.declare_parameter('audio_player', 'auto')
+        self.declare_parameter('service_name', '/speech_text')
         self._lock = threading.Lock()
         self._tts = None
         self._setup_error = ''
         self._load_model()
+        service_name = str(self.get_parameter('service_name').value)
         self._service = self.create_service(
-            SpeechText, '/speech_text', self._speak)
+            SpeechText, service_name, self._speak)
+        player = str(self.get_parameter('audio_player').value)
+        self._player_command = self._resolve_player(player)
+        if self._tts is not None:
+            self.get_logger().info(
+                'TTS 服务已就绪: %s, 播放器=%s' %
+                (service_name, ' '.join(self._player_command)))
+        else:
+            self.get_logger().error(
+                'TTS 服务已启动但模型不可用: %s' % self._setup_error)
+
+    @staticmethod
+    def _resolve_player(configured):
+        if configured.strip().lower() != 'auto':
+            command = shlex.split(configured)
+            if not command:
+                raise ValueError('audio_player 不能为空')
+            return command
+        if os.environ.get('PULSE_SERVER') and shutil.which('ffplay'):
+            return ['ffplay', '-nodisp', '-autoexit', '-loglevel', 'error']
+        if shutil.which('aplay'):
+            return ['aplay', '-q']
+        if shutil.which('ffplay'):
+            return ['ffplay', '-nodisp', '-autoexit', '-loglevel', 'error']
+        raise RuntimeError('找不到可用的音频播放器（aplay/ffplay）')
 
     def _load_model(self):
         model_dir = pathlib.Path(self.get_parameter('model_dir').value)
@@ -52,11 +80,13 @@ class TtsServer(Node):
             config = sherpa_onnx.OfflineTtsConfig(
                 model=model, rule_fsts=rule_fsts, max_num_sentences=1)
             self._tts = sherpa_onnx.OfflineTts(config)
+            self.get_logger().info('已加载 sherpa_onnx 模型: %s' % model_dir)
         except Exception as exc:
             self._setup_error = f'sherpa_onnx 模型加载失败: {exc}'
             self.get_logger().error(self._setup_error)
 
     def _speak(self, request, response):
+        self.get_logger().info('收到语音请求: %s' % request.text)
         if self._tts is None:
             response.success = False
             response.message = self._setup_error or 'TTS 未初始化'
@@ -86,9 +116,7 @@ class TtsServer(Node):
                         int(x * 32767).to_bytes(2, 'little', signed=True)
                         for x in samples)
                     wav.writeframes(pcm)
-                command = shlex.split(
-                    str(self.get_parameter('audio_player').value)
-                ) + [str(output)]
+                command = self._player_command + [str(output)]
                 subprocess.run(command, check=True, timeout=30)
                 response.success = True
                 response.message = str(output)
@@ -102,9 +130,14 @@ class TtsServer(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = TtsServer()
-    rclpy.spin(node)
-    node.destroy_node()
-    rclpy.shutdown()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 
 if __name__ == '__main__':

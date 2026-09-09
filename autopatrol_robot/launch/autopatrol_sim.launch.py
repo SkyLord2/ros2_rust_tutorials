@@ -24,6 +24,11 @@ def generate_launch_description():
     use_sim_time = LaunchConfiguration('use_sim_time')
     return launch.LaunchDescription([
         DeclareLaunchArgument('use_sim_time', default_value='true'),
+        DeclareLaunchArgument('initial_x', default_value='0.0'),
+        DeclareLaunchArgument('initial_y', default_value='0.0'),
+        DeclareLaunchArgument('initial_yaw', default_value='0.0'),
+        DeclareLaunchArgument('amcl_service', default_value='/amcl/set_initial_pose'),
+        DeclareLaunchArgument('initial_pose_topic', default_value='/initialpose'),
         DeclareLaunchArgument(
             'waypoints_file', default_value=default_waypoints),
         DeclareLaunchArgument('map', default_value=default_map),
@@ -31,6 +36,12 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'image_save_dir',
             default_value=os.path.join(os.getcwd(), 'autopatrol_images')),
+        DeclareLaunchArgument(
+            'image_topic', default_value='/camera_sensor/image_raw'),
+        DeclareLaunchArgument(
+            'speech_service', default_value='/speech_text'),
+        DeclareLaunchArgument('arrival_tolerance', default_value='0.35'),
+        DeclareLaunchArgument('audio_player', default_value='auto'),
         DeclareLaunchArgument('model_dir', default_value=default_model),
         IncludeLaunchDescription(PythonLaunchDescriptionSource(
             os.path.join(slam_share, 'launch', 'gazebo_sim.launch.py'))),
@@ -43,17 +54,31 @@ def generate_launch_description():
                 'params_file': LaunchConfiguration('params_file')}.items()),
         TimerAction(period=8.0, actions=[launch_ros.actions.Node(
             package='fishbot_application_cpp',
-            executable='init_robot_pose', output='screen')]),
+            executable='init_robot_pose', output='screen',
+            parameters=[{
+                'use_sim_time': use_sim_time,
+                'initial_x': LaunchConfiguration('initial_x'),
+                'initial_y': LaunchConfiguration('initial_y'),
+                'initial_yaw': LaunchConfiguration('initial_yaw'),
+                'amcl_service': LaunchConfiguration('amcl_service'),
+                'initial_pose_topic': LaunchConfiguration(
+                    'initial_pose_topic')}])]),
         launch_ros.actions.Node(
             package='autopatrol_robot', executable='tts_server.py',
             output='screen',
             parameters=[{
-                'model_dir': LaunchConfiguration('model_dir')}]),
+                'model_dir': LaunchConfiguration('model_dir'),
+                'service_name': LaunchConfiguration('speech_service'),
+                'audio_player': LaunchConfiguration('audio_player')}]),
         TimerAction(period=12.0, actions=[launch_ros.actions.Node(
             package='autopatrol_robot', executable='patrol_controller',
             output='screen',
             parameters=[{
                 'use_sim_time': use_sim_time,
                 'waypoints_file': LaunchConfiguration('waypoints_file'),
-                'image_save_dir': LaunchConfiguration('image_save_dir')}])]),
+                'image_topic': LaunchConfiguration('image_topic'),
+                'speech_service': LaunchConfiguration('speech_service'),
+                'image_save_dir': LaunchConfiguration('image_save_dir'),
+                'arrival_tolerance': LaunchConfiguration(
+                    'arrival_tolerance')}])]),
     ])
