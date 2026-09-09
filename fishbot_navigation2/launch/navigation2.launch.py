@@ -13,21 +13,24 @@ def generate_launch_description():
     rviz_config_dir = os.path.join(
         nav2_bringup_dir, 'rviz', 'nav2_default_view.rviz')
     
-    # 创建 Launch 配置
-    use_sim_time = launch.substitutions.LaunchConfiguration(
-        'use_sim_time', default='true')
-    map_yaml_path = launch.substitutions.LaunchConfiguration(
-        'map', default=os.path.join(fishbot_navigation2_dir, 'maps', 'room.yaml'))
-    nav2_param_path = launch.substitutions.LaunchConfiguration(
-        'params_file', default=os.path.join(fishbot_navigation2_dir, 'config', 'nav2_params.yaml'))
+    # Keep defaults as concrete paths.  Using a LaunchConfiguration as the
+    # default value can resolve to an existing empty argument in a parent
+    # launch, which makes Nav2 try to open an empty params filename.
+    default_map_path = os.path.join(
+        fishbot_navigation2_dir, 'maps', 'room.yaml')
+    default_params_path = os.path.join(
+        fishbot_navigation2_dir, 'config', 'nav2_params.yaml')
+    use_sim_time = launch.substitutions.LaunchConfiguration('use_sim_time')
+    map_yaml_path = launch.substitutions.LaunchConfiguration('map')
+    nav2_param_path = launch.substitutions.LaunchConfiguration('params_file')
 
     return launch.LaunchDescription([
         # 声明新的 Launch 参数
-        launch.actions.DeclareLaunchArgument('use_sim_time', default_value=use_sim_time,
+        launch.actions.DeclareLaunchArgument('use_sim_time', default_value='true',
                                              description='Use simulation (Gazebo) clock if true'),
-        launch.actions.DeclareLaunchArgument('map', default_value=map_yaml_path,
+        launch.actions.DeclareLaunchArgument('map', default_value=default_map_path,
                                              description='Full path to map file to load'),
-        launch.actions.DeclareLaunchArgument('params_file', default_value=nav2_param_path,
+        launch.actions.DeclareLaunchArgument('params_file', default_value=default_params_path,
                                              description='Full path to param file to load'),
 
         launch.actions.IncludeLaunchDescription(
