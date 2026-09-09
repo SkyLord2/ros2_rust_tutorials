@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
-    <xacro:include filename="$(find fishbot_description)/urdf/fishbot/common_inertia.xacro"/>
+    <xacro:include filename="$(find fishbot_slam)/urdf/fishbot/common_inertia.xacro"/>
     <xacro:macro name="camera_xacro" params="xyz">
         <link name="camera_link">
             <visual>

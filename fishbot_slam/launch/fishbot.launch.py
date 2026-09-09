@@ -4,7 +4,7 @@ from ament_index_python.packages import get_package_share_directory
 import os
 
 def generate_launch_description():
-    urdf_pkg_path = get_package_share_directory('fishbot_description')
+    urdf_pkg_path = get_package_share_directory('fishbot_slam')
     default_urdf_path = os.path.join(urdf_pkg_path, 'urdf', 'fishbot', 'fishbot.urdf.xacro')
     default_rviz_path = os.path.join(urdf_pkg_path, 'config', 'display_robot_model.rviz')
 
