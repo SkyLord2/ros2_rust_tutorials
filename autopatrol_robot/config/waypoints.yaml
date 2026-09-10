@@ -1,16 +1,16 @@
 waypoints:
   - name: entrance
-    x: 2.0
-    y: 3.0
+    x: 3.0
+    y: -4.4
     yaw: 0.0
-    text: "已到达入口，开始巡检"
+    text: "已到达1号房间，开始拍照记录"
   - name: room_a
-    x: 2.0
-    y: 1.0
+    x: -8.1
+    y: -4.5
     yaw: 1.57
-    text: "已到达一号房间"
+    text: "已到达2号房间，开始拍照记录"
   - name: origin
-    x: 2.0
-    y: 0.0
+    x: -7.4
+    y: 2.9
     yaw: 3.14
-    text: "已返回起点"
+    text: "已到达3号房间，开始拍照记录"
