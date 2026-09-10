@@ -301,7 +301,7 @@ private:
             if (image.empty()) return;
             {
                 std::lock_guard<std::mutex> lock(image_mutex_);
-                latest_image_ = image.clone();
+                latest_image_ = std::move(image);
                 latest_image_time_ = std::chrono::steady_clock::now();
             }
             if (!image_ready_logged_) {
