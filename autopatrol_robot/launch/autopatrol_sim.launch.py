@@ -42,6 +42,8 @@ def generate_launch_description():
             'speech_service', default_value='/speech_text'),
         DeclareLaunchArgument('arrival_tolerance', default_value='0.35'),
         DeclareLaunchArgument('audio_player', default_value='auto'),
+        DeclareLaunchArgument('tts_speed', default_value='0.75'),
+        DeclareLaunchArgument('tts_silence_after', default_value='0.35'),
         DeclareLaunchArgument('model_dir', default_value=default_model),
         IncludeLaunchDescription(PythonLaunchDescriptionSource(
             os.path.join(slam_share, 'launch', 'gazebo_sim.launch.py'))),
@@ -69,7 +71,10 @@ def generate_launch_description():
             parameters=[{
                 'model_dir': LaunchConfiguration('model_dir'),
                 'service_name': LaunchConfiguration('speech_service'),
-                'audio_player': LaunchConfiguration('audio_player')}]),
+                'audio_player': LaunchConfiguration('audio_player'),
+                'speed': LaunchConfiguration('tts_speed'),
+                'silence_after': LaunchConfiguration(
+                    'tts_silence_after')}]),
         TimerAction(period=12.0, actions=[launch_ros.actions.Node(
             package='autopatrol_robot', executable='patrol_controller',
             output='screen',
